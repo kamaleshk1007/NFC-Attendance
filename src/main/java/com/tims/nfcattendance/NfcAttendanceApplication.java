@@ -1,4 +1,4 @@
-package com.TIMS.NFC_Attendance;
+package com.tims.nfcattendance;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
