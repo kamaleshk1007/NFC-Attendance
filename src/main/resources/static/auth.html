@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NFC Attendance</title>
+<style>
+body{font-family:sans-serif;margin:0;padding:24px;text-align:center;background:#111;color:#eee}
+button{font-size:20px;padding:14px 28px;border:0;border-radius:10px;background:#2d7ff9;color:#fff}
+#result{margin-top:28px;padding:20px;border-radius:12px;font-size:24px;background:#222;white-space:pre-line;word-break:break-all}
+.ACCEPTED{background:#1b7f3b !important}
+.DUPLICATE{background:#a36b00 !important}
+.UNKNOWN{background:#9b2226 !important}
+</style>
+</head>
+<body>
+<h1>NFC Attendance</h1>
+<p id="msg">Tap Start, then hold a card to the back of the phone.</p>
+<button id="start">Start scanning</button>
+<div id="result"></div>
+<script>
+const msg = document.getElementById("msg");
+const result = document.getElementById("result");
+document.getElementById("start").addEventListener("click", async () => {
+  if (!("NDEFReader" in window)) {
+    msg.textContent = "Web NFC is not available here. It needs Chrome on Android and a trusted or secure address.";
+    return;
+  }
+  try {
+    const reader = new NDEFReader();
+    await reader.scan();
+    msg.textContent = "Scanning... hold a card to the phone.";
+    reader.onreadingerror = () => { msg.textContent = "Could not read that tag. Try again."; };
+    reader.onreading = async (event) => {
+      const uid = event.serialNumber;
+      try {
+        const res = await fetch("/api/taps", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid: uid, tappedAt: new Date().toISOString() })
+        });
+        const data = await res.json();
+        result.className = data.status;
+        result.textContent = data.status + (data.studentId ? " - " + data.studentId : "") + "\n" + data.uid;
+      } catch (e) {
+        result.className = "";
+        result.textContent = "Could not reach the server.";
+      }
+    };
+  } catch (e) {
+    msg.textContent = "NFC error: " + e.message;
+  }
+});
+</script>
+</body>
+</html>

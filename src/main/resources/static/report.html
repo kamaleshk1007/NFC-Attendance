@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attendance report</title>
+<style>
+body{font-family:sans-serif;margin:0;padding:24px;background:#111;color:#eee}
+h1{margin-top:0}
+input{font-size:16px;padding:6px;border-radius:6px;border:0}
+table{border-collapse:collapse;width:100%;margin-top:16px}
+th,td{padding:10px;border-bottom:1px solid #333;text-align:left}
+.yes{color:#4cd964}
+.no{color:#ff6b6b}
+#summary{margin-left:16px}
+</style>
+</head>
+<body>
+<h1>Attendance report</h1>
+<label>Date <input type="date" id="date"></label><span id="summary"></span>
+<table><thead><tr><th>Student</th><th>Card UID</th><th>Status</th><th>Taps</th><th>First tap</th></tr></thead><tbody id="rows"></tbody></table>
+<script>
+const dateInput = document.getElementById("date");
+dateInput.value = new Date().toLocaleDateString("en-CA");
+async function load() {
+  try {
+    const res = await fetch("/api/report?date=" + dateInput.value);
+    const rows = await res.json();
+    const body = document.getElementById("rows");
+    body.textContent = "";
+    let present = 0;
+    rows.forEach((r) => {
+      if (r.present) present++;
+      const tr = document.createElement("tr");
+      const cells = [r.studentId, r.uid, r.present ? "Present" : "Absent", r.taps, r.firstTapLocal || "-"];
+      cells.forEach((c, i) => {
+        const td = document.createElement("td");
+        td.textContent = c;
+        if (i === 2) td.className = r.present ? "yes" : "no";
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    document.getElementById("summary").textContent = present + " of " + rows.length + " present";
+  } catch (e) {
+    document.getElementById("summary").textContent = "Could not load the report.";
+  }
+}
+dateInput.addEventListener("change", load);
+load();
+setInterval(load, 5000);
+</script>
+</body>
+</html>
